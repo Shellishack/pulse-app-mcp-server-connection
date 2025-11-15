@@ -11,10 +11,11 @@ export default function Main() {
   const [currentArg, setCurrentArg] = useState<string>("");
   const [type, setType] = useState<string>("");
   const [result, setResult] = useState<{
-    mcp_server_name?: string;
-    command?: string;
-    args?: string[];
-    type?: string;
+    [mcpServerName: string]: {
+      command?: string;
+      args?: string[];
+      type?: string;
+    };
   } | null>(null);
   const [isEditing, setIsEditing] = useState<boolean>(false);
 
@@ -30,10 +31,11 @@ export default function Main() {
       // If any field exists in args, use it to set the form state
 
       const updatedResult = {
-        mcp_server_name: params["mcp_server_name"] ?? mcpServerName ?? "",
-        command: params["command"] ?? command ?? "",
-        args: params["args"] ?? args ?? [],
-        type: params["type"] ?? type ?? "",
+        [params["mcp_server_name"] ?? mcpServerName ?? ""]: {
+          command: params["command"] ?? command ?? "",
+          args: params["args"] ?? args ?? [],
+          type: params["type"] ?? type ?? "",
+        },
       };
 
       setResult(updatedResult);
@@ -61,10 +63,11 @@ export default function Main() {
     e.preventDefault();
 
     const formData = {
-      mcp_server_name: mcpServerName,
-      command: command,
-      args: args,
-      type: type,
+      [mcpServerName]: {
+        command: command,
+        args: args,
+        type: type,
+      },
     };
 
     setResult(formData);
@@ -85,7 +88,7 @@ export default function Main() {
           >
             Edit
           </button>
-          <pre className="bg-gray-100 p-4 rounded overflow-auto">
+          <pre className="bg-gray-100 p-4 rounded overflow-auto dark:bg-gray-700">
             {JSON.stringify(result, null, 2)}
           </pre>
         </div>
@@ -148,7 +151,7 @@ export default function Main() {
                 {args.map((arg, index) => (
                   <div
                     key={index}
-                    className="bg-gray-100 px-3 py-1 rounded flex items-center gap-2"
+                    className="bg-gray-100 px-3 py-1 rounded flex items-center gap-2 dark:bg-gray-700"
                   >
                     <span>{arg}</span>
                     <button
@@ -172,7 +175,7 @@ export default function Main() {
               id="type"
               value={type}
               onChange={(e) => setType(e.target.value)}
-              className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:focus:ring-blue-500"
             >
               <option value="">Select type</option>
               <option value="stdio">stdio</option>
