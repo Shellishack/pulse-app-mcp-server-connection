@@ -1,12 +1,22 @@
 import React, { useEffect, useState } from "react";
 import "./tailwind.css";
-import { useLoading } from "@pulse-editor/react-api";
+import { useLoading, useRegisterAction } from "@pulse-editor/react-api";
+import { preRegisteredActions } from "../pregistered-actions";
 
 export default function Main() {
-  const [count, setCount] = useState<number>(0);
   const { isReady, toggleLoading } = useLoading();
-  const [inputValue, setInputValue] = useState<string>("");
-  const [apiResult, setApiResult] = useState<string>("");
+  const [mcpServerName, setMcpServerName] = useState<string>("");
+  const [command, setCommand] = useState<string>("");
+  const [args, setArgs] = useState<string[]>([]);
+  const [currentArg, setCurrentArg] = useState<string>("");
+  const [type, setType] = useState<string>("");
+  const [result, setResult] = useState<{
+    mcp_server_name?: string;
+    command?: string;
+    args?: string[];
+    type?: string;
+  } | null>(null);
+  const [isEditing, setIsEditing] = useState<boolean>(false);
 
   useEffect(() => {
     if (isReady) {
@@ -14,61 +24,170 @@ export default function Main() {
     }
   }, [isReady, toggleLoading]);
 
+  useRegisterAction(
+    preRegisteredActions["config-mcp-server"],
+    async (args) => {
+      // If any field exists in args, use it to set the form state
+
+      const updatedResult = {
+        mcp_server_name: args["mcp_server_name"] ?? mcpServerName ?? "",
+        command: args["command"] ?? command ?? "",
+        args: args["args"] ?? args ?? [],
+        type: args["type"] ?? type ?? "",
+      };
+
+      setResult(updatedResult);
+      setIsEditing(false);
+
+      return {
+        "mcp-config": JSON.stringify(updatedResult, null, 4),
+      };
+    },
+    [mcpServerName, command, args, type]
+  );
+
+  const addArg = () => {
+    if (currentArg.trim()) {
+      setArgs([...args, currentArg.trim()]);
+      setCurrentArg("");
+    }
+  };
+
+  const removeArg = (index: number) => {
+    setArgs(args.filter((_, i) => i !== index));
+  };
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const formData = {
+      mcp_server_name: mcpServerName,
+      command: command,
+      args: args,
+      type: type,
+    };
+
+    setResult(formData);
+    setIsEditing(false);
+    console.log("Form submitted:", formData);
+  };
+
   return (
     <div className="p-2 flex flex-col">
-      <div className="flex items-center gap-x-1">
-        GitHub:
-        <button
-          className="w-8 h-8 border-1 border-gray-300 rounded-full p-1 hover:bg-gray-100"
-          onClick={() => {
-            window.open(
-              "https://github.com/claypulse/pulse-app-template",
-              "_blank"
-            );
-          }}
-        >
-          <img
-            src="assets/github-mark-light.svg"
-            alt="GitHub"
-            className="w-full h-full"
-          />
-        </button>
-      </div>
+      {result && !isEditing ? (
+        <div className="w-full space-y-2">
+          <h3 className="font-semibold text-lg mb-2">
+            Added MCP Server Connection:
+          </h3>
+          <button
+            className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 transition-colors"
+            onClick={() => setIsEditing(true)}
+          >
+            Edit
+          </button>
+          <pre className="bg-gray-100 p-4 rounded overflow-auto">
+            {JSON.stringify(result, null, 2)}
+          </pre>
+        </div>
+      ) : (
+        <form className="space-y-4 w-full" onSubmit={handleSubmit}>
+          <div className="flex flex-col gap-2">
+            <label htmlFor="mcp_server_name" className="font-semibold">
+              MCP Server Name
+            </label>
+            <input
+              id="mcp_server_name"
+              type="text"
+              value={mcpServerName}
+              onChange={(e) => setMcpServerName(e.target.value)}
+              className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Enter server name"
+            />
+          </div>
 
-      <div>
-        <button
-          className="bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-sm"
-          onClick={() => setCount(count + 1)}
-        >
-          Click me to increase count
-        </button>
-      </div>
-      <p className="text-blue-400">{count}</p>
+          <div className="flex flex-col gap-2">
+            <label htmlFor="command" className="font-semibold">
+              Command
+            </label>
+            <input
+              id="command"
+              type="text"
+              value={command}
+              onChange={(e) => setCommand(e.target.value)}
+              className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Enter command"
+            />
+          </div>
 
-      <div>
-        <input
-          className="border-2 border-gray-300 rounded-sm p-2"
-          type="text"
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-        />
-        <button
-          className="bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-sm"
-          onClick={() => {
-            fetch("/server-function/echo", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ message: inputValue }),
-            }).then(async (response) => {
-              const data = await response.json();
-              setApiResult(data.message);
-            });
-          }}
-        >
-          Click me to call server function that echoes a message
-        </button>
-        <p className="text-blue-400">{apiResult}</p>
-      </div>
+          <div className="flex flex-col gap-2">
+            <label htmlFor="args" className="font-semibold">
+              Args
+            </label>
+            <div className="flex gap-2">
+              <input
+                id="args"
+                type="text"
+                value={currentArg}
+                onChange={(e) => setCurrentArg(e.target.value)}
+                onKeyDown={(e) =>
+                  e.key === "Enter" && (e.preventDefault(), addArg())
+                }
+                className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1"
+                placeholder="Enter argument and press Add"
+              />
+              <button
+                type="button"
+                onClick={addArg}
+                className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition-colors"
+              >
+                Add
+              </button>
+            </div>
+            {args.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {args.map((arg, index) => (
+                  <div
+                    key={index}
+                    className="bg-gray-100 px-3 py-1 rounded flex items-center gap-2"
+                  >
+                    <span>{arg}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeArg(index)}
+                      className="text-red-500 hover:text-red-700 font-bold"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label htmlFor="type" className="font-semibold">
+              Type
+            </label>
+            <select
+              id="type"
+              value={type}
+              onChange={(e) => setType(e.target.value)}
+              className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Select type</option>
+              <option value="stdio">stdio</option>
+              <option value="sse">sse</option>
+            </select>
+          </div>
+
+          <button
+            type="submit"
+            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
+          >
+            Submit
+          </button>
+        </form>
+      )}
     </div>
   );
 }
