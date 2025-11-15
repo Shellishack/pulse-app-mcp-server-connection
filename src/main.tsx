@@ -26,21 +26,21 @@ export default function Main() {
 
   useRegisterAction(
     preRegisteredActions["config-mcp-server"],
-    async (args) => {
+    async (params) => {
       // If any field exists in args, use it to set the form state
 
       const updatedResult = {
-        mcp_server_name: args["mcp_server_name"] ?? mcpServerName ?? "",
-        command: args["command"] ?? command ?? "",
-        args: args["args"] ?? args ?? [],
-        type: args["type"] ?? type ?? "",
+        mcp_server_name: params["mcp_server_name"] ?? mcpServerName ?? "",
+        command: params["command"] ?? command ?? "",
+        args: params["args"] ?? args ?? [],
+        type: params["type"] ?? type ?? "",
       };
 
       setResult(updatedResult);
       setIsEditing(false);
 
       return {
-        "mcp-config": JSON.stringify(updatedResult, null, 4),
+        "mcp-config": updatedResult,
       };
     },
     [mcpServerName, command, args, type]

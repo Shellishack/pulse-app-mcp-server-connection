@@ -29,7 +29,7 @@ export const preRegisteredActions: Record<string, Action> = {
     },
     returns: {
       "mcp-config": {
-        type: "string",
+        type: "object",
         description: "The MCP server configuration as a JSON object.",
       },
     },

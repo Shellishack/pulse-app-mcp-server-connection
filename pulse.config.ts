@@ -16,7 +16,7 @@ const config: AppConfig = {
   description: packageJson.description,
   appType: AppTypeEnum.FileView,
   visibility: "unlisted",
-  recommendedHeight: 640,
+  recommendedHeight: 400,
   recommendedWidth: 360,
   thumbnail: "assets/thumbnail.png",
   preRegisteredActions: Object.values(preRegisteredActions),
